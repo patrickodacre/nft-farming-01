@@ -155,7 +155,7 @@ contract("Token", accounts => {
 
     })
 
-    describe('unstakeTokens', () => {
+    describe('unstakeTokens()', () => {
         it('should unstake all tokens', async () => {
             // stake the tokens
             {
