@@ -73,6 +73,27 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
         allowedTokens[token] = true;
     }
 
+    function stakedTokens() public
+        view
+        returns (address[] memory)
+    {
+        Account storage a = accounts[msg.sender];
+
+        address[] memory activeTokens = new address[](uniqueTokensStaked[msg.sender]);
+        uint256 counter = 0;
+
+        for (uint256 i = 0; i < a.tokens.length; i++) {
+            address token = a.tokens[i];
+
+            if (a.tokenStaked[token]) {
+                activeTokens[counter] = token;
+                counter++;
+            }
+        }
+
+        return activeTokens;
+    }
+
     // stakeTokens changes ownership of the staker's 3rd-party ERC20 token
     // to that of this contact, then records that staked amount here in this contract.
     // This contract is just holding ownership of those 3rd-party tokens
@@ -202,14 +223,14 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
         rewards.push(previousReward.add(totalStake));
     }
 
-    function getAccountRewards() public
+    function getAccountRewards(address[] memory tokens) public
         view
         returns (uint256)
     {
-        return _checkReward(msg.sender);
+        return _checkReward(msg.sender, tokens);
     }
 
-    function _checkReward(address staker) private
+    function _checkReward(address staker, address[] memory tokens) private
         view
         returns (uint256)
     {
@@ -219,9 +240,9 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
         uint256 totalPortionOfRewards;
 
         // check deposits for each token type staked
-        for (uint i = 0; i < a.tokens.length; i ++) {
+        for (uint i = 0; i < tokens.length; i ++) {
 
-            address token = a.tokens[i];
+            address token = tokens[i];
 
             // we use this mapping to keep track of
             // which tokens are currently being staked
@@ -257,7 +278,7 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
         return totalPortionOfRewards;
     }
 
-    function claimRewards() public
+    function claimRewards(address[] memory tokens) public
     {
 
         address staker = msg.sender;
@@ -268,7 +289,7 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
 
         // mint the rewarded tokens:
         {
-            uint256 totalPortionOfRewards = _checkReward(staker);
+            uint256 totalPortionOfRewards = _checkReward(staker, tokens);
 
             // no rewards? no need to proceed with anything here.
             require(totalPortionOfRewards > 0, "TokenFarm: No rewards.");
@@ -279,9 +300,9 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
         // reset all rewardFromIndexes so next claimRewards
         // only grants rewards that haven't yet been granted.
         {
-            for (uint i = 0; i < a.tokens.length; i ++) {
+            for (uint i = 0; i < tokens.length; i ++) {
 
-                address token = a.tokens[i];
+                address token = tokens[i];
 
                 // the 'tokens' array has all tokens
                 // that have ever been staked by this account,

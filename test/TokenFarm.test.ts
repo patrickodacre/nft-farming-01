@@ -88,6 +88,52 @@ contract("Token", accounts => {
         })
     })
 
+    describe('stakedTokens()', () => {
+        it('should return all tokens staked by the user', async () => {
+            // create a new token so we can check for multiple tokens
+            {
+                const newMDaiToken = await MockDaiToken.new(tokens('1000'), {from: owner})
+                await tokenFarm.authorizeToken(newMDaiToken.address, {from: owner})
+                await newMDaiToken.getMockDai(investor, tokens('10'))
+                await newMDaiToken.approve(tokenFarm.address, tokens('10'), {from: investor})
+                await tokenFarm.stakeTokens(tokens('10'), newMDaiToken.address, { from: investor })
+            }
+
+            await mDaiToken.getMockDai(investor, tokens('10'))
+            await mDaiToken.approve(tokenFarm.address, tokens('10'), {from: investor})
+            await tokenFarm.stakeTokens(tokens('10'), mDaiToken.address, { from: investor })
+
+            const tt = await tokenFarm.stakedTokens({from: investor})
+
+            assert.equal(tt.length, 2)
+        })
+
+        it('should not return tokens that are no longer staked', async () => {
+            // create a new token so we can check for multiple tokens
+            {
+                const newMDaiToken = await MockDaiToken.new(tokens('1000'), {from: owner})
+                await tokenFarm.authorizeToken(newMDaiToken.address, {from: owner})
+                await newMDaiToken.getMockDai(investor, tokens('10'))
+                await newMDaiToken.approve(tokenFarm.address, tokens('10'), {from: investor})
+                // first stake it so it's added to the list of
+                // account.tokens that have been staked at one time or other
+                await tokenFarm.stakeTokens(tokens('10'), newMDaiToken.address, { from: investor })
+
+                // unstake the first token so we can make sure it isn't returned
+                await tokenFarm.unstakeTokens(newMDaiToken.address, {from: investor})
+            }
+
+            await mDaiToken.getMockDai(investor, tokens('10'))
+            await mDaiToken.approve(tokenFarm.address, tokens('10'), {from: investor})
+            await tokenFarm.stakeTokens(tokens('10'), mDaiToken.address, { from: investor })
+
+            const tt = await tokenFarm.stakedTokens({from: investor})
+
+            assert.equal(tt.length, 1)
+        })
+
+    })
+
     describe('stakeTokens()', () => {
         it('should stake tokens', async () => {
             await mDaiToken.getMockDai(investor, tokens('10'))
@@ -160,7 +206,7 @@ contract("Token", accounts => {
             await tokenFarm.distributeRewards({from: owner})
 
             await expectRevert(
-                tokenFarm.claimRewards({from: investor}),
+                tokenFarm.claimRewards([], {from: investor}),
                 "TokenFarm: Account isn't active. No tokens are staked."
             )
         })
@@ -183,21 +229,21 @@ contract("Token", accounts => {
 
             {
                 await tokenFarm.distributeRewards({from: owner})
-                await tokenFarm.claimRewards({from:investor})
+                await tokenFarm.claimRewards([mDaiToken.address], {from:investor})
                 const b = await eqToken.balanceOf(investor, platID)
                 assert.equal(b.toString(), tokens('10'))
             }
 
             {
                 await tokenFarm.distributeRewards({from: owner})
-                await tokenFarm.claimRewards({from:investor})
+                await tokenFarm.claimRewards([mDaiToken.address], {from:investor})
                 const b = await eqToken.balanceOf(investor, platID)
                 assert.equal(b.toString(), tokens('20'))
             }
 
             {
                 await tokenFarm.distributeRewards({from: owner})
-                await tokenFarm.claimRewards({from:investor})
+                await tokenFarm.claimRewards([mDaiToken.address], {from:investor})
                 const b = await eqToken.balanceOf(investor, platID)
                 assert.equal(b.toString(), tokens('30'))
             }
