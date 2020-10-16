@@ -41,7 +41,6 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
 
     uint256 public totalStake;
     address[] public stakers;
-    address[] allowedTokens;
     uint256[] public rewards;
 
     /* === Mappings === */
@@ -51,6 +50,7 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
 
     mapping(address => Account) public accounts;
     mapping(address => uint256) public uniqueTokensStaked;
+    mapping(address => bool) public allowedTokens;
 
     /* === Events === */
 
@@ -67,7 +67,7 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
     function authorizeToken(address token) public
         onlyOwner
     {
-        allowedTokens.push(token);
+        allowedTokens[token] = true;
     }
 
     // stakeTokens changes ownership of the staker's 3rd-party ERC20 token
@@ -303,12 +303,6 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
         view
         returns (bool)
     {
-        for (uint256 i = 0; i < allowedTokens.length; i++) {
-            if (allowedTokens[i] == token) {
-                return true;
-            }
-        }
-
-        return false;
+        return allowedTokens[token];
     }
 }
