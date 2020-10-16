@@ -27,7 +27,7 @@ contract EQToken is ERC1155 {
         _mint(msg.sender, PLATINUM, 10**27, ""); // max number
     }
 
-    function platinumID() public view returns (uint256)
+    function platinumID() public pure returns (uint256)
     {
         return PLATINUM;
     }
