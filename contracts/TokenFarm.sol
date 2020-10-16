@@ -48,7 +48,7 @@ contract TokenFarm is ERC1155Holder, ChainlinkClient, Ownable {
     // ERC20 token > (msg.sender => balance)
     mapping(address => mapping(address => uint256)) public stakingBalance;
 
-    mapping(address => Account) public accounts;
+    mapping(address => Account) accounts;
     mapping(address => uint256) public uniqueTokensStaked;
     mapping(address => bool) public allowedTokens;
 
